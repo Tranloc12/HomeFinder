@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from ckeditor.fields import RichTextField
+from cloudinary.models import CloudinaryField
 
 class UserManager(BaseUserManager):
     def create_user(self, username, email=None, password=None, **extra_fields):
@@ -37,8 +38,9 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=150, unique=True)
-    avatar = models.ImageField(upload_to='avatars/%Y/%m/', blank=True, null=True)
+    avatar = CloudinaryField(null=True)
     role = models.CharField(max_length=10, choices=ROLES, default='tenant')
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
@@ -49,7 +51,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.username
-
 
 
 class BaseModel(models.Model):
@@ -70,7 +71,7 @@ class Listing(BaseModel):
     max_occupants = models.IntegerField(default=1)
     longitude = models.FloatField()
     latitude = models.FloatField()
-    image = models.ImageField(upload_to='listings/%Y/%m/')
+    image = CloudinaryField(null=True)
     host = models.ForeignKey(User, related_name='listings', on_delete=models.CASCADE)
     is_approved = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)
@@ -82,12 +83,16 @@ class Listing(BaseModel):
 class Follow(BaseModel):
     user = models.ForeignKey(User, related_name='following', on_delete=models.CASCADE)
     host = models.ForeignKey(User, related_name='followers', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)  # Thời gian theo dõi
 
 
 class Comment(BaseModel):
     listing = models.ForeignKey(Listing, related_name='comments', on_delete=models.CASCADE)
     user = models.ForeignKey(User, related_name='comments', on_delete=models.CASCADE)
     content = RichTextField()
+    created_at = models.DateTimeField(auto_now_add=True)  # Thời gian bình luận
+    updated_at = models.DateTimeField(auto_now=True)  # Trường updated_at (nếu có)
+    active = models.BooleanField(default=True)  # Trạng thái bình luận (có thể bị xóa)
 
 
 class Notification(BaseModel):

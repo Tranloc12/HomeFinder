@@ -1,0 +1,92 @@
+from django.template.context_processors import request
+from rest_framework import serializers
+from .models import User, Listing, Follow, Comment, Notification, ActivityLog
+
+class UserSerializer(serializers.ModelSerializer):
+    avatar=serializers.ImageField(required=False)
+    def create(self, validated_data):
+        data=validated_data.copy()
+        u=User(**data)
+        u.set_password(u.password)
+        u.save()
+        return u
+
+    def get_avatar(self, user):
+        # Kiểm tra nếu user.avatar tồn tại
+        if user.avatar:
+            # Nếu avatar là một URL, trả về URL
+            if hasattr(user.avatar, 'url'):
+                return user.avatar.url
+            # Nếu avatar là một đường dẫn nội bộ
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(f'/static/{user.avatar.name}')
+        return None  # Nếu không có avatar, trả về None
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'password', 'email', 'avatar', 'role', 'phone_number', 'is_active', 'is_staff']
+        extra_kwargs = {
+            'password': {
+                'write_only': True
+            }
+        }
+
+
+class ListingSerializer(serializers.ModelSerializer):
+    host = UserSerializer(read_only=True)
+    image = serializers.SerializerMethodField(source='images')
+
+    def get_image(self, listing):
+        # Kiểm tra nếu listing.image tồn tại
+        if listing.image:
+            # Nếu image là một URL, trả về URL
+            if hasattr(listing.image, 'url'):
+                return listing.image.url
+            # Nếu image là một đường dẫn nội bộ
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(f'/static/{listing.image.name}')
+        return None  # Nếu không có hình ảnh, trả về None
+
+    class Meta:
+        model = Listing
+        fields = [
+            'id', 'title', 'description', 'price', 'address', 'district',
+            'max_occupants', 'longitude', 'latitude', 'image', 'host',
+            'is_approved', 'is_verified'
+        ]
+
+
+class FollowSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    host = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Follow
+        fields = ['id', 'user', 'host']
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    listing = ListingSerializer(read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ['id', 'listing', 'user', 'content']
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Notification
+        fields = ['id', 'user', 'content']
+
+
+class ActivityLogSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = ActivityLog
+        fields = ['id', 'user', 'action', 'timestamp']

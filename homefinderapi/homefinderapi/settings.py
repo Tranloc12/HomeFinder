@@ -39,11 +39,18 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'homefinder.apps.HomefinderConfig',
     'ckeditor',
-    'ckeditor_uploader'
+    'ckeditor_uploader',
+    'rest_framework',
+    'drf_yasg'
 ]
 
-CKEDITOR_UPLOAD_PATH = "images/ckeditor/"
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS':
+        'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 2
+}
 
+CKEDITOR_UPLOAD_PATH = "images/ckeditor/"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -123,7 +130,7 @@ TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
-USE_TZ = True
+USE_TZ = False
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
@@ -134,3 +141,14 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+import cloudinary
+
+# Configuration
+cloudinary.config(
+    cloud_name="da5r4z2vw",
+    api_key="682557161131968",
+    api_secret="QzsEGTvDRgwUwIuDm1GZEIPHK18",  # Click 'View API Keys' above to copy your API secret
+    secure=True
+)
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+

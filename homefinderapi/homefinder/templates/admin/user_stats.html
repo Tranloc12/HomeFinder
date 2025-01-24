@@ -1,0 +1,146 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h1>Thống kê người dùng</h1>
+
+<!-- Bộ lọc thời gian -->
+<form method="get" action=".">
+    <label for="period">Thống kê theo:</label>
+    <select id="period" name="period" >
+        <option value="month" {% if request.GET.period == "month" %}selected{% endif %}>Tháng</option>
+        <option value="quarter" {% if request.GET.period == "quarter" %}selected{% endif %}>Quý</option>
+        <option value="year" {% if request.GET.period == "year" %}selected{% endif %}>Năm</option>
+    </select>
+
+    <!-- Lọc theo tháng -->
+    {% if request.GET.period == 'month' %}
+        <label for="month">Tháng:</label>
+        <select id="month" name="month">
+            <option value="">--Chọn tháng--</option>
+            <option value="01" {% if request.GET.month == "01" %}selected{% endif %}>Tháng 1</option>
+            <option value="02" {% if request.GET.month == "02" %}selected{% endif %}>Tháng 2</option>
+            <option value="03" {% if request.GET.month == "03" %}selected{% endif %}>Tháng 3</option>
+            <option value="04" {% if request.GET.month == "04" %}selected{% endif %}>Tháng 4</option>
+            <option value="05" {% if request.GET.month == "05" %}selected{% endif %}>Tháng 5</option>
+            <option value="06" {% if request.GET.month == "06" %}selected{% endif %}>Tháng 6</option>
+            <option value="07" {% if request.GET.month == "07" %}selected{% endif %}>Tháng 7</option>
+            <option value="08" {% if request.GET.month == "08" %}selected{% endif %}>Tháng 8</option>
+            <option value="09" {% if request.GET.month == "09" %}selected{% endif %}>Tháng 9</option>
+            <option value="10" {% if request.GET.month == "10" %}selected{% endif %}>Tháng 10</option>
+            <option value="11" {% if request.GET.month == "11" %}selected{% endif %}>Tháng 11</option>
+            <option value="12" {% if request.GET.month == "12" %}selected{% endif %}>Tháng 12</option>
+        </select>
+        <label for="year">Năm:</label>
+        <input type="number" id="year" name="year" min="2000"  max="{{current_year}}" value="{{ request.GET.year }}" placeholder="Chọn năm" />
+    {% endif %}
+
+    <!-- Lọc theo quý -->
+    {% if request.GET.period == 'quarter' %}
+        <label for="quarter">Quý:</label>
+        <select id="quarter" name="quarter">
+            <option value="">--Chọn quý--</option>
+            <option value="1" {% if request.GET.quarter == "1" %}selected{% endif %}>Quý 1</option>
+            <option value="2" {% if request.GET.quarter == "2" %}selected{% endif %}>Quý 2</option>
+            <option value="3" {% if request.GET.quarter == "3" %}selected{% endif %}>Quý 3</option>
+            <option value="4" {% if request.GET.quarter == "4" %}selected{% endif %}>Quý 4</option>
+        </select>
+        <label for="year">Năm:</label>
+        <input type="number" id="year" name="year" min="2000" max="{{current_year}}" value="{{ request.GET.year }}" placeholder="Chọn năm" />
+    {% endif %}
+
+    <!-- Lọc theo năm -->
+    {% if request.GET.period == 'year' %}
+        <label for="year">Năm:</label>
+        <input type="number" id="year" name="year" min="2000"  max="{{current_year}}" value="{{ request.GET.year }}" placeholder="Chọn năm" />
+    {% endif %}
+
+    <button type="submit">Lọc</button>
+</form>
+<!-- Dropdown chọn loại biểu đồ -->
+<label for="chartType">Chọn loại biểu đồ:</label>
+<select id="chartType" onchange="changeChartType(this)">
+    <option value="bar" {% if chart_type == 'bar' %}selected{% endif %}>Biểu đồ cột</option>
+    <option value="line" {% if chart_type == 'line' %}selected{% endif %}>Biểu đồ đường</option>
+    <option value="pie" {% if chart_type == 'pie' %}selected{% endif %}>Biểu đồ tròn</option>
+    <option value="doughnut" {% if chart_type == 'doughnut' %}selected{% endif %}>Biểu đồ bánh</option>
+    <option value="radar" {% if chart_type == 'radar' %}selected{% endif %}>Biểu đồ radar</option>
+</select>
+
+<!-- Hiển thị dữ liệu dưới dạng bảng -->
+<table>
+    <thead>
+        <tr>
+            <th>Khoảng thời gian</th>
+            <th>Vai trò</th>
+            <th>Số lượng</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for stat in user_stats %}
+        <tr>
+            <td>{{ stat.period|date:"M Y" }}</td>
+            <td>{{ stat.role }}</td>
+            <td>{{ stat.count }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Biểu đồ bằng Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<canvas id="userChart" width="800" height="400"></canvas>
+
+<script>
+// Cập nhật biểu đồ theo loại đã chọn
+let chart_type = "{{ chart_type|default:'bar' }}";  // Đọc loại biểu đồ từ server hoặc mặc định là 'bar'
+
+const data = {
+    labels: [
+        {% for stat in user_stats %}
+            '{{ stat.period|date:"M Y" }}',
+        {% endfor %}
+    ],
+    datasets: [
+        {% for role in user_stats|dictsort:"role" %}
+        {
+            label: '{{ role.role }}',
+            data: [
+                {% for stat in user_stats %}
+                    {% if stat.role == role.role %}
+                        {{ stat.count }},
+                    {% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: 'hsl({{ forloop.counter|add:"100" }}, 70%, 70%)',
+        },
+        {% endfor %}
+    ]
+};
+
+const config = {
+    type: chart_type,  // Loại biểu đồ (cột, đường, tròn, v.v.)
+    data: data,
+    options: {
+        responsive: true,
+        scales: {
+            x: {
+                beginAtZero: true
+            },
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+};
+
+// Tạo biểu đồ lần đầu tiên
+let chart = new Chart(document.getElementById('userChart'), config);
+
+// Thay đổi loại biểu đồ khi người dùng chọn
+function changeChartType(selectElement) {
+    const newType = selectElement.value;
+    chart.config.type = newType;  // Cập nhật loại biểu đồ
+    chart.update();  // Cập nhật biểu đồ
+}
+</script>
+{% endblock %}
