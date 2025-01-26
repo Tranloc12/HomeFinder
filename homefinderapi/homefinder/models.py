@@ -96,6 +96,32 @@ class Comment(BaseModel):
         return f"{self.user.username} - {self.listing.title}"
 
 
+class RoomRequest(BaseModel):
+    tenant = models.ForeignKey(User, related_name='room_requests', on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    description = RichTextField()
+    price_range = models.CharField(max_length=50)  # Ví dụ: "2tr-3tr"
+    preferred_location = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)  # Thêm trường này nếu chưa có.
+
+    def __str__(self):
+        return self.title
+
+
+class Comment(BaseModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    listing = models.ForeignKey(Listing, null=True, blank=True, on_delete=models.CASCADE)
+    room_request = models.ForeignKey(RoomRequest, null=True, blank=True, on_delete=models.CASCADE)
+    content = models.TextField()
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.content[:20]
+
+
+
 class Notification(BaseModel):
     user = models.ForeignKey(User, related_name='notifications', on_delete=models.CASCADE)
     content = models.TextField()
@@ -104,7 +130,7 @@ class Notification(BaseModel):
         return f"Notification for {self.user.username}"
 
 
-class Chat(models.Model):
+class Chat(BaseModel):
     sender = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE)
     receiver = models.ForeignKey(User, related_name='received_messages', on_delete=models.CASCADE)
     message = models.TextField()
@@ -124,13 +150,3 @@ class Statistics(BaseModel):
         return f"Statistics for {self.date}"
 
 
-class RoomRequest(BaseModel):
-    tenant = models.ForeignKey(User, related_name='room_requests', on_delete=models.CASCADE)
-    title = models.CharField(max_length=255)
-    description = RichTextField()
-    price_range = models.CharField(max_length=50)  # Ví dụ: "2tr-3tr"
-    preferred_location = models.CharField(max_length=255)
-    created_at = models.DateTimeField(auto_now_add=True)  # Thêm trường này nếu chưa có.
-
-    def __str__(self):
-        return self.title
