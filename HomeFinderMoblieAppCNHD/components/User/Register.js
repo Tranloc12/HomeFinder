@@ -8,20 +8,12 @@ import { useNavigation } from "@react-navigation/native";
 
 const Register = () => {
     const [user, setUser] = useState({});
+    const [imageUris, setImageUris] = useState([]);  // Lưu ảnh của chủ nhà trọ
+    const nav = useNavigation();
+    const [loading, setLoading] = useState(false);
+    const [err, setErr] = useState(false);
 
     const users = {
-        "first_name": {
-            "title": "Tên",
-            "field": "first_name",
-            "icon": "text",
-            "secureTextEntry": false
-        },
-        "last_name": {
-            "title": "Họ và tên lót",
-            "field": "last_name",
-            "icon": "text",
-            "secureTextEntry": false
-        },
         "username": {
             "title": "Tên đăng nhập",
             "field": "username",
@@ -32,16 +24,23 @@ const Register = () => {
             "field": "password",
             "icon": "eye",
             "secureTextEntry": true
-        }, "confirm": {
-            "title": "Xác nhận mật khẩu",
-            "field": "confirm",
-            "icon": "eye",
-            "secureTextEntry": true
+        }, "email": {
+            "title": "email",
+            "field": "email",
+            "secureTextEntry": false
+        }, "avatar": {
+            "title": "Chọn Tệp ",
+            "field": "Chọn Tệp ",
+        }, "role": {
+            "title": "Vai Trò ",
+            "field": "role",
+        }, "Phone Number": {
+            "title": "Số Điện Thoại ",
+            "field": "Phone Number",
+            "secureTextEntry": false
         }
     }
-    const nav = useNavigation();
-    const [loading, setLoading] = useState(false);
-    const [err, setErr] = useState(false);
+   
 
     const change = (value, field) => {
         setUser({...user, [field]: value});
@@ -55,9 +54,9 @@ const Register = () => {
         } else {
             const result = await ImagePicker.launchImageLibraryAsync();
             if (!result.canceled)
-                change(result.assets[0], 'avatar');
-            }
+                setImageUris([...imageUris, result.assets[0]]);
         }
+    }
 
     const register = async () => {
         if (user.password !== user.confirm)
@@ -66,6 +65,7 @@ const Register = () => {
             setErr(false);
             let form = new FormData();
 
+            // Gửi các trường người dùng vào form data
             for (let key in user)
                 if (key !== 'confirm') {
                     if (key === 'avatar') {
@@ -74,11 +74,21 @@ const Register = () => {
                             name: user.avatar.fileName,
                             type: user.avatar.type
                         })
-                    } else
+                    } else {
                         form.append(key, user[key]);
+                    }
                 }
 
             console.info(form)
+
+             // Thêm ảnh cho chủ nhà trọ
+             imageUris.forEach((image, index) => {
+                form.append(`room_image_${index}`, {
+                    uri: image.uri,
+                    name: image.fileName,
+                    type: image.type
+                });
+            });
 
                 
             setLoading(true);

@@ -24,7 +24,8 @@ const Login = () => {
             "field": "password",
             "icon": "eye",
             "secureTextEntry": true
-        }
+        },
+        
     }
 
     const change = (value, field) => {

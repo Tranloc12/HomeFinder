@@ -6,59 +6,65 @@ import APIs, { endpoints } from "../../configs/APIs";
 import MyStyles from "../../styles/MyStyles";
 import moment from "moment";
 
-const RoomDetails = ({route}) => {
-    const lessonId = route.params?.lessonId;
-    const [lesson, setLesson] = React.useState(null);
-    const [comments, setComments] = React.useState(null);
+const RoomDetails = ({ route }) => {
+    const roomId = route.params?.roomId;  // Sử dụng roomId 
+    const [room, setRoom] = React.useState(null);  // Khởi tạo state cho phòng trọ
+    const [comments, setComments] = React.useState(null);  // Khởi tạo state cho bình luận
 
-    const loadLesson = async () => {
-        let res = await APIs.get(endpoints['lesson-details'](lessonId));
-        setLesson(res.data);
+    // Hàm tải chi tiết phòng trọ từ API
+    const loadRoom = async () => {
+        let res = await APIs.get(endpoints['room-details'](roomId));  // Sử dụng roomId để gọi API chi tiết phòng trọ
+        setRoom(res.data);
     }
 
+    // Hàm tải bình luận về phòng trọ
     const loadComments = async () => {
-        let res = await APIs.get(endpoints['comments'](lessonId));
+        let res = await APIs.get(endpoints['comments'](roomId));  // API bình luận liên quan đến phòng trọ
         setComments(res.data);
-
-        console.info(res.data)
     }
 
+    // Load thông tin phòng trọ và bình luận khi component được render
     React.useEffect(() => {
-        loadLesson();
-    }, [lessonId]);
+        loadRoom();
+        loadComments();
+    }, [roomId]);
 
-    const isCloseToBottom = ({layoutMeasurement, contentOffset, contentSize}) => {
+    const isCloseToBottom = ({ layoutMeasurement, contentOffset, contentSize }) => {
         return layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
     }
 
-    const reachBottom = ({nativeEvent}) => {
-        if (isCloseToBottom(nativeEvent) && comments === null)
-            loadComments();
+    const reachBottom = ({ nativeEvent }) => {
+        if (isCloseToBottom(nativeEvent) && comments === null) {
+            loadComments();  // Tải thêm bình luận khi kéo xuống dưới cùng
+        }
     }
 
     return (
         <ScrollView onScroll={reachBottom}>
-            {room===null?<ActivityIndicator />:<>
+            {room === null ? <ActivityIndicator size="large" /> : (
                 <Card>
-                   
                     <Card.Cover source={{ uri: room.image }} />
                     <Card.Content>
-                        <Text variant="titleLarge" style={MyStyles.subject}>{room.subject}</Text>
-                    
-                        <RenderHTML source={{'html': room.content}} />
+                        <Text variant="titleLarge" style={MyStyles.roomTitle}>{room.name}</Text>
+                        <Text style={MyStyles.roomDescription}>{room.description}</Text>
+                        <Text style={MyStyles.roomPrice}>Giá: {room.price} VNĐ</Text>
+                        <Text style={MyStyles.roomLocation}>Địa chỉ: {room.address}</Text>
+                        <RenderHTML source={{ html: room.content }} />
                     </Card.Content>
-                    
-                    
                 </Card>
-            </>}
+            )}
 
             <View>
-                {comments===null?<ActivityIndicator />:<>
-                
-                    {comments.map(c => <List.Item title={c.content} description={moment(c.created_date).fromNow()}  
-           left={() => <Image style={MyStyles.box} source={{uri: c.user.image}} />} /> )}
-
-                </>}
+                {comments === null ? <ActivityIndicator size="large" /> : (
+                    comments.map(c => (
+                        <List.Item
+                            key={c.id}
+                            title={c.content}
+                            description={moment(c.created_date).fromNow()}
+                            left={() => <Image style={MyStyles.box} source={{ uri: c.user.image }} />}
+                        />
+                    ))
+                )}
             </View>
         </ScrollView>
     );
