@@ -1,6 +1,7 @@
 from django.template.context_processors import request
 from rest_framework import serializers
-from .models import User, Listing, Follow, Comment, Notification, ActivityLog
+from .models import User, Listing, Follow, Comment, Notification, Chat, RoomRequest, Statistics
+
 
 class UserSerializer(serializers.ModelSerializer):
     avatar=serializers.ImageField(required=False)
@@ -10,6 +11,11 @@ class UserSerializer(serializers.ModelSerializer):
         u.set_password(u.password)
         u.save()
         return u
+
+    def to_representation(self, instance):
+        data=super().to_representation(instance)
+        data['avatar']=instance.avatar.url
+        return  data
 
     def get_avatar(self, user):
         # Kiểm tra nếu user.avatar tồn tại
@@ -84,9 +90,24 @@ class NotificationSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'content']
 
 
-class ActivityLogSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+class ChatSerializer(serializers.ModelSerializer):
+    sender = UserSerializer(read_only=True)
+    receiver = UserSerializer(read_only=True)
 
     class Meta:
-        model = ActivityLog
-        fields = ['id', 'user', 'action', 'timestamp']
+        model = Chat
+        fields = ['id', 'sender', 'receiver', 'message', 'timestamp']
+
+
+class StatisticsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Statistics
+        fields = ['id', 'date', 'total_users', 'total_hosts', 'total_listings']
+
+
+class RoomRequestSerializer(serializers.ModelSerializer):
+    tenant = UserSerializer(read_only=True)
+
+    class Meta:
+        model = RoomRequest
+        fields = ['id', 'tenant', 'title', 'description', 'price_range', 'preferred_location', 'created_at']

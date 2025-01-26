@@ -11,7 +11,7 @@ from django import forms
 from ckeditor_uploader.widgets import CKEditorUploadingWidget
 from django.urls import path
 
-from .models import User, Listing, Follow, Comment, Notification, ActivityLog
+from .models import User, Listing, Follow, Comment, Notification, Chat, RoomRequest, Statistics
 
 
 class CustomAdminSite(admin.AdminSite):
@@ -90,16 +90,15 @@ class UserAdmin(admin.ModelAdmin):
     list_display = ('username', 'email', 'role', 'is_active', 'is_staff')
     search_fields = ('email', 'username')
     list_filter = ('role', 'is_active', 'is_staff')
-    readonly_fields = ['image']
+    readonly_fields = ['avatar_preview']
 
-    def image(self, User):
-        if User.avatar:
-            # Kiểm tra xem avatar có tồn tại và trả về URL từ Cloudinary
-            return mark_safe(f"<img src='{User.avatar.url}' width='120' />")
-        return None  # Nếu không có avatar, trả về None
+    def avatar_preview(self, obj):
+        if obj.avatar:
+            # Hiển thị ảnh avatar
+            return mark_safe(f"<img src='{obj.avatar.url}' width='120' />")
+        return "No avatar available"
 
-    image.short_description = 'Avatar'  # Tên cột hiển thị trong Admin
-
+    avatar_preview.short_description = 'Avatar'  # Tên cột hiển thị trong Admin
 
 class ListingForm(forms.ModelForm):
     description = forms.CharField(widget=CKEditorUploadingWidget)
@@ -158,11 +157,19 @@ class NotificationAdmin(admin.ModelAdmin):
     form = NotificationForm
 
 
-class ActivityLogAdmin(admin.ModelAdmin):
-    list_display = ('user', 'action', 'timestamp')
-    search_fields = ('user__email', 'action')
+class ChatAdmin(admin.ModelAdmin):
+    list_display = ('sender', 'receiver', 'message', 'timestamp')
     list_filter = ('timestamp',)
 
+
+class RoomRequestAdmin(admin.ModelAdmin):
+    list_display = ('tenant', 'title', 'price_range', 'preferred_location')
+    list_filter = ('price_range', 'tenant')  # Bạn có thể thêm các trường lọc khác nếu cần
+
+
+class StatisticsAdmin(admin.ModelAdmin):
+    list_display = ('date', 'total_users', 'total_hosts', 'total_listings')
+    list_filter = ('date',)
 
 admin_site = CustomAdminSite(name='myadmin')
 admin_site.register(User, UserAdmin)
@@ -170,4 +177,6 @@ admin_site.register(Listing, ListingAdmin)
 admin_site.register(Comment, CommentAdmin)
 admin_site.register(Follow, FollowAdmin)
 admin_site.register(Notification, NotificationAdmin)
-admin_site.register(ActivityLog, ActivityLogAdmin)
+admin_site.register(Chat, ChatAdmin)
+admin_site.register(RoomRequest, RoomRequestAdmin)
+admin.site.register(Statistics, StatisticsAdmin)
