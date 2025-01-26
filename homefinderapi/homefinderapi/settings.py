@@ -41,16 +41,32 @@ INSTALLED_APPS = [
     'ckeditor',
     'ckeditor_uploader',
     'rest_framework',
-    'drf_yasg'
+    'drf_yasg',
+    'oauth2_provider',
 ]
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS':
         'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 2
+    'PAGE_SIZE': 2,
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
+    )
 }
 
-CKEDITOR_UPLOAD_PATH = "images/ckeditor/"
+CKEDITOR_UPLOAD_PATH = "uploads/"  # Bạn có thể thay đổi đường dẫn này nếu cần.
+
+
+CKEDITOR_CONFIGS = {
+    'default': {
+        'toolbar': 'Full',
+        'height': 300,
+        'width': 800,
+        'filebrowserUploadUrl': '/ckeditor/upload/',  # Đảm bảo URL upload
+        'filebrowserImageUploadUrl': '/ckeditor/upload/',  # Đảm bảo URL upload hình ảnh
+    },
+}
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -151,4 +167,7 @@ cloudinary.config(
     secure=True
 )
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+OAUTH2_PROVIDER = { 'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore' }
 
+CLIENT_ID='wViGUHdy4Qs44QTWkLPIc9PXyRsAAbghJy8h5dxZ'
+CLIENT_SECRET='mKY90jlOevbU2B3YEBOm3Yg8qmqBmYHVWrbzO5lYznXPHTSCCbynuogRwL3s75yNk3NGFhGnlPb7bYYkVlTekDOOqbXiv8BhqODtbFUeXomYxnxy41RQcLgTvvxZtLF8'

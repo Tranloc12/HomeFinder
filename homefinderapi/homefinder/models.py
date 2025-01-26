@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from ckeditor.fields import RichTextField
 from cloudinary.models import CloudinaryField
 
+
 class UserManager(BaseUserManager):
     def create_user(self, username, email=None, password=None, **extra_fields):
         if not username:
@@ -38,7 +39,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=150, unique=True)
-    avatar = CloudinaryField(null=True)
+    avatar = CloudinaryField('avatar', null=True, blank=True)
     role = models.CharField(max_length=10, choices=ROLES, default='tenant')
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     is_active = models.BooleanField(default=True)
@@ -68,10 +69,11 @@ class Listing(BaseModel):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     address = models.CharField(max_length=255)
     district = models.CharField(max_length=255, blank=True, null=True)
+    city = models.CharField(max_length=100)
     max_occupants = models.IntegerField(default=1)
     longitude = models.FloatField()
     latitude = models.FloatField()
-    image = CloudinaryField(null=True)
+    images = CloudinaryField('images', null=True, blank=True)
     host = models.ForeignKey(User, related_name='listings', on_delete=models.CASCADE)
     is_approved = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)
@@ -83,24 +85,68 @@ class Listing(BaseModel):
 class Follow(BaseModel):
     user = models.ForeignKey(User, related_name='following', on_delete=models.CASCADE)
     host = models.ForeignKey(User, related_name='followers', on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)  # Thời gian theo dõi
 
 
 class Comment(BaseModel):
     listing = models.ForeignKey(Listing, related_name='comments', on_delete=models.CASCADE)
     user = models.ForeignKey(User, related_name='comments', on_delete=models.CASCADE)
     content = RichTextField()
-    created_at = models.DateTimeField(auto_now_add=True)  # Thời gian bình luận
-    updated_at = models.DateTimeField(auto_now=True)  # Trường updated_at (nếu có)
-    active = models.BooleanField(default=True)  # Trạng thái bình luận (có thể bị xóa)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.listing.title}"
+
+
+class RoomRequest(BaseModel):
+    tenant = models.ForeignKey(User, related_name='room_requests', on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    description = RichTextField()
+    price_range = models.CharField(max_length=50)  # Ví dụ: "2tr-3tr"
+    preferred_location = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)  # Thêm trường này nếu chưa có.
+
+    def __str__(self):
+        return self.title
+
+
+class Comment(BaseModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    listing = models.ForeignKey(Listing, null=True, blank=True, on_delete=models.CASCADE)
+    room_request = models.ForeignKey(RoomRequest, null=True, blank=True, on_delete=models.CASCADE)
+    content = models.TextField()
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.content[:20]
+
 
 
 class Notification(BaseModel):
     user = models.ForeignKey(User, related_name='notifications', on_delete=models.CASCADE)
-    content = RichTextField()
+    content = models.TextField()
+
+    def __str__(self):
+        return f"Notification for {self.user.username}"
 
 
-class ActivityLog(BaseModel):
-    user = models.ForeignKey(User, related_name='activity_logs', on_delete=models.CASCADE)
-    action = models.CharField(max_length=255)
+class Chat(BaseModel):
+    sender = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE)
+    receiver = models.ForeignKey(User, related_name='received_messages', on_delete=models.CASCADE)
+    message = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Chat from {self.sender.username} to {self.receiver.username}"
+
+
+class Statistics(BaseModel):
+    date = models.DateField()
+    total_users = models.IntegerField()
+    total_hosts = models.IntegerField()
+    total_listings = models.IntegerField()
+
+    def __str__(self):
+        return f"Statistics for {self.date}"
+
+
